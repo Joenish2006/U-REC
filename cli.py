@@ -18,7 +18,7 @@ import sys
 
 import numpy as np
 
-from urec import config, models
+from urec import config, models, term
 from urec.database import Database, clean_name
 
 
@@ -27,7 +27,15 @@ def _db(cfg: dict) -> Database:
 
 
 def _confirm(question: str) -> bool:
-    return input(f"{question} [y/N] ").strip().lower() in ("y", "yes")
+    return term.ask(f"{question} {term.dim('[y/N]')} ").strip().lower() in ("y", "yes")
+
+
+def _device(cfg: dict) -> str:
+    from urec.runtime import providers
+
+    first = providers(cfg["recognition"]["device"])[0]
+    return {"CUDAExecutionProvider": "gpu · cuda", "DmlExecutionProvider": "gpu · directml",
+            "CoreMLExecutionProvider": "gpu · coreml"}.get(first, "cpu")
 
 
 # ---------------------------------------------------------------- commands
@@ -38,6 +46,7 @@ def cmd_identify(cfg: dict, camera: int | None, web: bool) -> int:
         web_mod.serve(cfg, camera)
     else:
         from urec import identify
+        term.info("Opening camera. Press q or Esc in the window to stop.")
         identify.run(cfg, camera)
     return 0
 
@@ -50,28 +59,30 @@ def cmd_register(cfg: dict, name: str, camera: int | None, force: bool) -> int:
     try:
         name = clean_name(name)
     except ValueError as exc:
-        print(exc)
+        term.error(str(exc))
         return 1
     with _db(cfg) as db:
         if db.has(name) and not force and not _confirm(f"{name} is already registered. Scan again and replace?"):
             return 1
-        print("Loading face model ...", flush=True)
+        term.info("Loading face model ...")
         embedder = get_embedder(cfg)
-        print(f"Scanning {name}. Follow the prompts in the camera window.")
+        term.info(f"Scanning {term.BOLD}{name}{term.RESET}. Follow the prompts in the camera window.")
         vectors = register.scan(cfg, embedder, name, camera)
         if vectors is None:
+            term.error("Nothing saved.")
             return 1
 
         others = {n: v for n, v in db.gallery(embedder.name).items() if n.lower() != name.lower()}
         if others:
             mean = vectors.mean(axis=0)
             match, score = Matcher(others, config.threshold(cfg)).match(mean / np.linalg.norm(mean))
-            if match and not force and not _confirm(
-                    f"This face looks like {match} (similarity {score:.2f}). Save as {name} anyway?"):
-                return 1
+            if match:
+                term.warn(f"This face looks like {term.BOLD}{match}{term.RESET} (similarity {score:.2f}).")
+                if not force and not _confirm(f"Save as {name} anyway?"):
+                    return 1
 
         db.save_person(name, embedder.name, vectors)
-    print(f"Saved {name}: {len(vectors)} face samples ({embedder.name} backend).")
+    term.ok(f"Saved {term.BOLD}{name}{term.RESET} {term.dim(f'· {len(vectors)} face samples · {embedder.name}')}")
     return 0
 
 
@@ -80,52 +91,61 @@ def cmd_list(cfg: dict) -> int:
     with _db(cfg) as db:
         people = db.people()
     if not people:
-        print("Nobody is registered yet.")
+        term.info("Nobody is registered yet. Choose Register to add someone.")
         return 0
-    print(f"{'Name':<24}{'Samples':<10}Registered")
+    print()
+    print(f"  {term.GREY}{'NAME':<22}{'SAMPLES':<10}REGISTERED{term.RESET}")
     for name, created, counts in people:
         n = counts.get(backend, 0)
-        note = "" if n else f"   (re-register for '{backend}')"
-        print(f"{name:<24}{n:<10}{created[:10]}{note}")
+        mark = term.dot(term.GREEN if n else term.YELLOW)
+        note = "" if n else term.dim(f"  re-register for {backend}")
+        print(f"  {mark} {term.BOLD}{name:<20}{term.RESET}{n:<10}{term.dim(created[:10])}{note}")
+    print()
     return 0
 
 
 def cmd_delete(cfg: dict, name: str, yes: bool) -> int:
     with _db(cfg) as db:
         if not db.has(name):
-            print(f"No one called {name!r} is registered.")
+            term.error(f"No one called {name!r} is registered.")
             return 1
         if not yes and not _confirm(f"Delete {name}?"):
             return 1
         db.delete(name)
-    print(f"Deleted {name}.")
+    term.ok(f"Deleted {name}.")
     return 0
 
 
 def cmd_reset(cfg: dict, yes: bool) -> int:
-    if not yes and input("This deletes EVERY registered person. Type YES to confirm: ").strip() != "YES":
-        print("Reset cancelled.")
-        return 1
+    if not yes:
+        term.warn(f"This deletes {term.BOLD}every{term.RESET} registered person.")
+        if term.ask(f"Type {term.RED}{term.BOLD}YES{term.RESET} to confirm: ").strip() != "YES":
+            term.info("Reset cancelled.")
+            return 1
     with _db(cfg) as db:
         n = db.reset()
-    print(f"Database reset: removed {n} people.")
+    term.ok(f"Database reset · removed {n} {'person' if n == 1 else 'people'}.")
     return 0
 
 
 def cmd_info(cfg: dict) -> int:
-    from urec.runtime import providers
-
     rec = cfg["recognition"]
     with _db(cfg) as db:
         count = len(db.people())
-    print(f"Config file : {config.CONFIG_FILE if config.CONFIG_FILE.exists() else 'defaults (no config.toml)'}")
-    print(f"Backend     : {rec['backend']}"
-          + (f" ({rec['insightface_model']})" if rec["backend"] == "insightface" else ""))
-    print(f"Threshold   : {config.threshold(cfg)}")
-    print(f"Body model  : {cfg['bodies']['model']}")
-    print(f"Devices     : {', '.join(providers(rec['device']))}")
-    print(f"Models dir  : {models.model_dir()}")
-    print(f"Database    : {config.database_path(cfg)} ({count} people)")
+    backend = rec["backend"] + (f" ({rec['insightface_model']})" if rec["backend"] == "insightface" else "")
+    rows = [
+        ("config", config.CONFIG_FILE if config.CONFIG_FILE.exists() else "defaults (no config.toml)"),
+        ("backend", backend),
+        ("threshold", config.threshold(cfg)),
+        ("body model", cfg["bodies"]["model"]),
+        ("device", _device(cfg)),
+        ("models", models.model_dir()),
+        ("database", f"{config.database_path(cfg)} ({count} people)"),
+    ]
+    print()
+    for key, value in rows:
+        print(f"  {term.GREY}{key:<12}{term.RESET}{value}")
+    print()
     return 0
 
 
@@ -133,35 +153,52 @@ def cmd_download(cfg: dict) -> int:
     insightface = cfg["recognition"]["backend"] == "insightface"
     keys = [cfg["bodies"]["model"]] + ([] if insightface else ["yunet", "sface"])
     for key in keys:
-        print(f"{key:<12}{models.get(key)}")
+        term.ok(f"{key:<12}{term.dim(str(models.get(key)))}")
     if insightface:
         from urec.embedder import get_embedder
         get_embedder(cfg)  # insightface downloads its own models on first load
-        print("insightface ready")
+        term.ok("insightface ready")
     return 0
 
 
 # ---------------------------------------------------------------- menu
 
-MENU = """
-=== U-REC ===   backend: {backend}   people: {people}
- [1] Identify (camera window)
- [2] Identify in browser (localhost)
- [3] Register a person
- [4] List people
- [5] Delete a person
- [6] Reset database
- [q] Quit
-"""
+MENU = [
+    ("1", "Identify", "live camera window"),
+    ("2", "Identify web", "stream to localhost"),
+    ("3", "Register", "add a person with a face scan"),
+    ("4", "People", "list who is registered"),
+    ("5", "Delete", "remove one person"),
+    ("6", "Reset", "remove everyone"),
+    ("q", "Quit", ""),
+]
+
+
+def _status(cfg: dict) -> str:
+    with _db(cfg) as db:
+        people = len(db.people())
+    g, b = term.GREEN, term.BLUE
+    return (f"  {term.dot(g)} {cfg['recognition']['backend']}   "
+            f"{term.dot(g if people else term.YELLOW)} {people} registered   "
+            f"{term.dot(b)} {_device(cfg)}")
+
+
+def _print_menu(cfg: dict) -> None:
+    print()
+    print(_status(cfg))
+    print(term.rule(46))
+    for key, label, desc in MENU:
+        print(f"   {term.GREEN}{term.BOLD}{key}{term.RESET}   {term.WHITE}{term.BOLD}{label:<14}{term.RESET}"
+              f"{term.dim(desc)}")
+    print()
 
 
 def menu(cfg: dict, camera: int | None) -> int:
+    print(term.title())
     while True:
-        with _db(cfg) as db:
-            people = len(db.people())
-        print(MENU.format(backend=cfg["recognition"]["backend"], people=people))
+        _print_menu(cfg)
         try:
-            choice = input("Choose: ").strip().lower()
+            choice = term.ask("").strip().lower()
         except EOFError:  # Ctrl+D / closed input
             print()
             return 0
@@ -171,22 +208,27 @@ def menu(cfg: dict, camera: int | None) -> int:
             elif choice == "2":
                 cmd_identify(cfg, camera, web=True)
             elif choice == "3":
-                cmd_register(cfg, input("Name: "), camera, force=False)
+                cmd_register(cfg, term.ask("Name: "), camera, force=False)
             elif choice == "4":
                 cmd_list(cfg)
             elif choice == "5":
                 cmd_list(cfg)
-                cmd_delete(cfg, input("Name to delete: ").strip(), yes=False)
+                cmd_delete(cfg, term.ask("Name to delete: ").strip(), yes=False)
             elif choice == "6":
                 cmd_reset(cfg, yes=False)
             elif choice in ("q", "quit", "exit"):
+                print(term.dim("  bye.\n"))
                 return 0
             else:
-                print("Pick 1-6 or q.")
+                term.warn("Pick 1-6 or q.")
         except KeyboardInterrupt:
-            print("\nStopped.")
+            print()
+            term.info("Stopped.")
+        except EOFError:
+            print()
+            return 0
         except Exception as exc:
-            print(f"Error: {exc}")
+            term.error(str(exc))
 
 
 # ---------------------------------------------------------------- entry point
@@ -216,11 +258,11 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "init":
-        print("Created config.toml" if config.init_file() else "config.toml already exists")
+        term.ok("Created config.toml" if config.init_file() else "config.toml already exists")
         return 0
     if args.command == "set-backend":
         config.set_backend(args.backend)
-        print(f"Backend set to {args.backend} in config.toml")
+        term.ok(f"Backend set to {args.backend} in config.toml")
         return 0
 
     try:
@@ -241,10 +283,11 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_download(cfg)
         return menu(cfg, args.camera)
     except KeyboardInterrupt:
-        print("\nStopped.")
+        print()
+        term.info("Stopped.")
         return 130
     except (RuntimeError, ValueError, FileNotFoundError) as exc:
-        print(f"Error: {exc}")
+        term.error(str(exc))
         return 1
 
 

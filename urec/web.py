@@ -12,7 +12,7 @@ import time
 import cv2
 from flask import Flask, Response
 
-from . import identify
+from . import identify, term
 
 PAGE = """<!doctype html>
 <html><head><meta charset="utf-8"><title>U-REC</title>
@@ -42,7 +42,7 @@ def serve(cfg: dict, camera_index: int | None = None) -> None:
             identify.run(cfg, camera_index, show_window=False, on_frame=on_frame, stop=stop)
         except BaseException as exc:  # shown to the user and in the browser log
             failure.append(exc)
-            print(f"Camera loop stopped: {exc}")
+            term.error(f"Camera loop stopped: {exc}")
         finally:
             stop.set()
 
@@ -65,7 +65,7 @@ def serve(cfg: dict, camera_index: int | None = None) -> None:
         return Response(frames(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
     host, port = cfg["web"]["host"], int(cfg["web"]["port"])
-    print(f"Open http://{'localhost' if host == '127.0.0.1' else host}:{port}  (Ctrl+C to stop)")
+    term.ok(f"Live at {term.BOLD}http://{'localhost' if host == '127.0.0.1' else host}:{port}{term.RESET}  {term.dim('Ctrl+C to stop')}")
     try:
         app.run(host=host, port=port, threaded=True, use_reloader=False)
     finally:

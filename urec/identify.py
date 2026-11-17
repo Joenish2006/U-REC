@@ -19,7 +19,7 @@ from typing import Callable
 import cv2
 import numpy as np
 
-from . import camera, config, ui
+from . import camera, config, term, ui
 from .bodies import BodyDetector
 from .database import Database
 from .embedder import get_embedder
@@ -76,13 +76,13 @@ def assign_faces(faces, boxes: list, shape) -> list[int]:
 def run(cfg: dict, camera_index: int | None = None, show_window: bool = True,
         on_frame: Callable[[np.ndarray], None] | None = None,
         stop: threading.Event | None = None) -> None:
-    print("Loading models ...", flush=True)
+    term.info("Loading models ...")
     embedder = get_embedder(cfg)
     bodies = BodyDetector(cfg)
     with Database(config.database_path(cfg)) as db:
         matcher = Matcher(db.gallery(embedder.name), config.threshold(cfg))
     if matcher.people == 0:
-        print(f"Nobody is registered for the '{embedder.name}' backend yet: everyone will be Unknown.")
+        term.warn(f"Nobody is registered for the '{embedder.name}' backend yet: everyone will be Unknown.")
 
     ic = cfg["identify"]
     tracker = Tracker(window=int(ic["vote_window"]), max_misses=int(ic["max_misses"]))

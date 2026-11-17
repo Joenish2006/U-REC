@@ -20,7 +20,7 @@ import numpy as np
 
 from collections import Counter
 
-from . import camera, ui
+from . import camera, term, ui
 
 STEPS = [
     ("straight", "Look straight at the camera"),
@@ -164,20 +164,20 @@ def scan(cfg: dict, embedder, name: str, camera_index: int | None = None) -> np.
             ui.progress(view, done / len(STEPS))
             cv2.imshow(window, view)
             if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
-                print("Registration cancelled.")
+                term.info("Registration cancelled.")
                 return None
     finally:
         cap.release()
         cv2.destroyAllWindows()
 
     for s in skipped:
-        print(f"  note: timed out on '{s}'")
+        term.warn(f"Timed out on '{s}'")
     if len(vectors) < int(rc["min_total"]):
-        print(f"Only {len(vectors)} good frames (need {rc['min_total']}).")
+        term.error(f"Only {len(vectors)} good frames (need {rc['min_total']}).")
         if rejected:
             reasons = ", ".join(f"{why}: {n}" for why, n in rejected.most_common())
-            print(f"  Frames rejected - {reasons}")
+            term.info(f"Frames rejected · {reasons}")
             if rejected.most_common(1)[0][0] == "blurry":
-                print("  Hold still in good light, or lower register.min_sharpness in config.toml.")
+                term.info("Hold still in good light, or lower register.min_sharpness in config.toml.")
         return None
     return np.vstack(vectors).astype(np.float32)
