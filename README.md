@@ -55,6 +55,24 @@ python cli.py download-models
 python cli.py
 ```
 
+## Quick start
+
+```bash
+git clone https://github.com/Joenish2006/U-REC
+cd U-REC
+./setup.sh --insightface        # Windows: setup.bat --insightface   (one time)
+./run.sh register YourName      # Windows: run.bat register YourName
+./run.sh identify               # Windows: run.bat identify   (q to quit)
+```
+
+**Registering:** sit in good light with only you in view, then follow the prompts:
+look straight, turn your head one way and then the other, tilt it up or down and then
+the other way. The box around your face turns green each time a frame is kept. It
+takes about 10–20 seconds and saves around 30 samples.
+
+**Identifying:** everyone starts as a red "Unknown" box. A registered person turns
+green with their name after about a second. Press `q` or Esc to close.
+
 ## Usage
 
 Run with no arguments for the menu:
@@ -83,10 +101,18 @@ Or call a command directly (`run.sh` / `run.bat` / `python cli.py`):
 | `info` | backend, threshold, GPU/CPU, file locations |
 | `--camera 1` | use another camera (put it before the command) |
 
-**Tuning:** if strangers get a name, raise `threshold_*` in `config.toml`. If known people
-show as Unknown, lower it a little or register them again in better light. On a slow
-laptop use `model = "yolox_tiny"`, `insightface_model = "buffalo_s"` and
-`recognize_every = 3`.
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `Could not open camera` | Close other apps using the webcam (Zoom, Meet, browser), or try `--camera 1` |
+| `Permission denied` on `./run.sh` | Run `chmod +x run.sh setup.sh` once |
+| Registration says `Only N good frames` | It prints why frames were rejected. `blurry`: hold still in better light, or lower `min_sharpness` in `config.toml` |
+| Strangers get a name | Raise `threshold_*` in `config.toml` |
+| A registered person stays "Unknown" | Lower `threshold_*` a little, or register them again in better light |
+| Slow (low fps) | Set `model = "yolox_tiny"`, `insightface_model = "buffalo_s"`, `recognize_every = 3` |
+| Model download fails with `CERTIFICATE_VERIFY_FAILED` | The network is intercepting HTTPS (campus/office Wi-Fi). Run setup once on a mobile hotspot or home network |
+| Switched backend and everyone is "Unknown" | Each backend stores its own data: register people again (`list` shows who needs it) |
 
 ## Project layout
 
