@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="300" viewBox="0 0 1280 300" role="img" aria-label="U-REC">
+  <g fill="none" stroke="#3FB950" stroke-width="6" stroke-linecap="round">
+    <path d="M410 70 V50 H450"/>
+    <path d="M830 50 H870 V70"/>
+    <path d="M410 210 V230 H450"/>
+    <path d="M830 230 H870 V210"/>
+  </g>
+  <rect x="410" y="14" width="172" height="34" rx="6" fill="#3FB950"/>
+  <text x="424" y="38" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="600" fill="#0D1117">known · 0.92</text>
+  <text x="640" y="170" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="112" font-weight="700" letter-spacing="6" fill="#E6EDF3">U-REC</text>
+  <text x="640" y="282" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" fill="#8B949E">real-time face recognition, from your terminal</text>
+</svg>
