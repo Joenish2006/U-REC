@@ -1,0 +1,30 @@
+# Privacy: face data never goes in the repo
+data/
+dataset/
+*.db
+*.pkl
+*.npy
+*.jpg
+*.jpeg
+*.png
+
+# Models are downloaded at runtime (InsightFace models are non-commercial)
+models/
+*.onnx
+.insightface/
+
+# Local settings
+config.toml
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

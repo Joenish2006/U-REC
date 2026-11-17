@@ -1,0 +1,3 @@
+# Optional best-accuracy backend. Its pretrained models are for non-commercial research only.
+# Windows needs Visual Studio Build Tools ("Desktop development with C++") to build it.
+insightface>=0.7.3

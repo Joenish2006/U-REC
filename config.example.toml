@@ -1,0 +1,46 @@
+# U-REC settings. setup copies this to config.toml (gitignored) — edit that copy.
+# Anything you leave out uses the default in urec/config.py.
+
+[recognition]
+# "opencv"      YuNet + SFace. MIT / Apache-2.0 models, free for any use. (default)
+# "insightface" SCRFD + ArcFace. Best accuracy. Models are NON-COMMERCIAL research only.
+#               Install with: ./setup.sh --insightface   (or setup.bat --insightface)
+backend = "opencv"
+insightface_model = "buffalo_l"   # "buffalo_s" is faster on slow CPUs
+# Similarity needed to accept a match. Higher = fewer wrong names, more "Unknown".
+threshold_opencv = 0.42
+threshold_insightface = 0.45
+min_face_score = 0.6              # face detector confidence
+device = "auto"                   # "auto" uses the GPU when available, or "cpu"
+
+[camera]
+index = 0
+width = 1280
+height = 720
+mirror = true
+
+[bodies]
+# yolox_nano / yolox_tiny (fast) · yolox_s (balanced) · yolox_m / yolox_l (accurate, needs GPU)
+model = "yolox_s"
+score = 0.5
+nms = 0.45
+
+[identify]
+recognize_every = 2   # run face recognition every N frames (higher = faster on CPU)
+vote_window = 8       # how many recent results each tracked person remembers
+min_votes = 2         # votes a name needs before the box turns green
+max_misses = 15       # frames a person can disappear before their track is dropped
+
+[register]
+frames_per_step = 6
+step_timeout = 12.0   # seconds before a scan step is skipped
+min_total = 10        # good frames needed to save a person
+min_face_px = 80      # face must be at least this wide
+min_sharpness = 40.0  # blur check; lower it for poor webcams
+
+[web]
+host = "127.0.0.1"    # only this computer. "0.0.0.0" exposes the camera to your network
+port = 5000
+
+[paths]
+database = "data/urec.db"
