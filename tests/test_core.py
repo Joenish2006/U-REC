@@ -114,6 +114,17 @@ class AssignFacesTest(unittest.TestCase):
         boxes = [[0, 0, 100, 300], [200, 0, 300, 300]]
         self.assertEqual(assign_faces([face((230, 20, 270, 70))], boxes, (480, 640)), [1])
 
+    def test_close_up_face_in_lower_half_of_body(self):
+        # real numbers from a laptop webcam: person close to the camera
+        boxes = [[382, 222, 1004, 712], [0, 308, 160, 714]]
+        self.assertEqual(assign_faces([face((551, 359, 866, 733))], boxes, (720, 1280)), [0])
+        self.assertEqual(len(boxes), 2)  # no extra estimated box
+
+    def test_prefers_body_with_face_in_upper_part(self):
+        # face of a person in front (box 1) overlapping the torso of someone behind (box 0)
+        boxes = [[100, 0, 500, 600], [200, 250, 400, 700]]
+        self.assertEqual(assign_faces([face((270, 270, 330, 340))], boxes, (720, 1280)), [1])
+
     def test_face_without_body_gets_estimated_box(self):
         boxes = []
         owners = assign_faces([face((300, 100, 360, 170))], boxes, (480, 640))

@@ -26,7 +26,8 @@ from .embedder import get_embedder
 from .matcher import Matcher
 from .tracker import Tracker
 
-UPPER_BODY = 0.6  # a face must sit in the top 60% of a body box to belong to it
+MIN_INSIDE = 0.6  # at least 60% of the face box must lie inside the body box
+UPPER_BODY = 0.6  # faces in the top 60% of a body box are preferred (far-away, full-body view)
 
 
 def body_from_face(face_box, shape) -> np.ndarray:
@@ -38,18 +39,33 @@ def body_from_face(face_box, shape) -> np.ndarray:
                      min(fw - 1, x2 + 0.9 * w), min(fh - 1, y2 + 4.0 * h)], dtype=np.float32)
 
 
+def _inside(face_box, body) -> float:
+    """Fraction of the face box that lies inside the body box."""
+    fx1, fy1, fx2, fy2 = face_box
+    w = max(0.0, min(fx2, body[2]) - max(fx1, body[0]))
+    h = max(0.0, min(fy2, body[3]) - max(fy1, body[1]))
+    area = max((fx2 - fx1) * (fy2 - fy1), 1e-6)
+    return w * h / area
+
+
 def assign_faces(faces, boxes: list, shape) -> list[int]:
-    """For each face, the index of the body box it belongs to (appending boxes if needed)."""
+    """For each face, the index of the body box it belongs to (appending boxes if needed).
+
+    A face belongs to a body when it lies mostly inside it. Close to a webcam the face
+    can fill the lower half of the visible body, so position alone isn't required; when
+    several bodies qualify, one with the face in its upper part wins, then the smallest.
+    """
     owners: list[int] = []
     for f in faces:
-        cx = (f.box[0] + f.box[2]) / 2
         cy = (f.box[1] + f.box[3]) / 2
-        best, best_area = None, float("inf")
+        best, best_rank = None, None
         for i, b in enumerate(boxes):
-            if b[0] <= cx <= b[2] and b[1] <= cy <= b[1] + UPPER_BODY * (b[3] - b[1]):
-                area = (b[2] - b[0]) * (b[3] - b[1])
-                if area < best_area:
-                    best, best_area = i, area
+            if _inside(f.box, b) < MIN_INSIDE:
+                continue
+            upper = cy <= b[1] + UPPER_BODY * (b[3] - b[1])
+            rank = (not upper, (b[2] - b[0]) * (b[3] - b[1]))
+            if best_rank is None or rank < best_rank:
+                best, best_rank = i, rank
         if best is None:
             boxes.append(body_from_face(f.box, shape))
             best = len(boxes) - 1

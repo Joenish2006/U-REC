@@ -32,7 +32,7 @@ DEFAULTS: dict = {
         "step_timeout": 12.0,
         "min_total": 10,
         "min_face_px": 80,
-        "min_sharpness": 40.0,
+        "min_sharpness": 25.0,
     },
     "web": {"host": "127.0.0.1", "port": 5000},
     "paths": {"database": "data/urec.db"},

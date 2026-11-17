@@ -18,6 +18,8 @@ import time
 import cv2
 import numpy as np
 
+from collections import Counter
+
 from . import camera, ui
 
 STEPS = [
@@ -44,12 +46,15 @@ def head_pose(landmarks) -> tuple[float, float]:
     return float(yaw), float(pitch)
 
 
-def sharpness(frame: np.ndarray, box) -> float:
+def sharpness(frame: np.ndarray, box, size: int = 112) -> float:
+    """Blur score of the face. The face is resized to a fixed size first, so the score
+    doesn't depend on how close the person is. Typical webcam: sharp 45-65, blurred < 20."""
     h, w = frame.shape[:2]
     x1, y1, x2, y2 = (int(v) for v in box)
     crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
     if crop.size == 0:
         return 0.0
+    crop = cv2.resize(crop, (size, size), interpolation=cv2.INTER_AREA)
     return float(cv2.Laplacian(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var())
 
 
@@ -108,6 +113,7 @@ def scan(cfg: dict, embedder, name: str, camera_index: int | None = None) -> np.
     guide = PoseGuide()
     vectors: list[np.ndarray] = []
     skipped: list[str] = []
+    rejected: Counter[str] = Counter()
     step_i, step_count = 0, 0
     step_start = last_capture = time.monotonic()
 
@@ -122,8 +128,10 @@ def scan(cfg: dict, embedder, name: str, camera_index: int | None = None) -> np.
 
             if not faces:
                 status = "No face found - face the camera, in good light"
+                rejected["no face"] += 1
             elif len(faces) > 1:
                 status = "Only one person in view, please"
+                rejected["more than one face"] += 1
                 for f in faces:
                     ui.label_box(view, f.box, ui.RED, "?")
             else:
@@ -132,8 +140,10 @@ def scan(cfg: dict, embedder, name: str, camera_index: int | None = None) -> np.
                 color = ui.YELLOW
                 if f.box[2] - f.box[0] < rc["min_face_px"]:
                     status = "Come a little closer"
+                    rejected["face too small"] += 1
                 elif sharpness(frame, f.box) < rc["min_sharpness"]:
                     status = "Hold still"
+                    rejected["blurry"] += 1
                 elif guide.ok(step, yaw, pitch) and now - last_capture >= CAPTURE_GAP:
                     vectors.append(f.embedding)
                     step_count += 1
@@ -163,6 +173,11 @@ def scan(cfg: dict, embedder, name: str, camera_index: int | None = None) -> np.
     for s in skipped:
         print(f"  note: timed out on '{s}'")
     if len(vectors) < int(rc["min_total"]):
-        print(f"Only {len(vectors)} good frames (need {rc['min_total']}). Try again with better light.")
+        print(f"Only {len(vectors)} good frames (need {rc['min_total']}).")
+        if rejected:
+            reasons = ", ".join(f"{why}: {n}" for why, n in rejected.most_common())
+            print(f"  Frames rejected - {reasons}")
+            if rejected.most_common(1)[0][0] == "blurry":
+                print("  Hold still in good light, or lower register.min_sharpness in config.toml.")
         return None
     return np.vstack(vectors).astype(np.float32)

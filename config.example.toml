@@ -36,7 +36,7 @@ frames_per_step = 6
 step_timeout = 12.0   # seconds before a scan step is skipped
 min_total = 10        # good frames needed to save a person
 min_face_px = 80      # face must be at least this wide
-min_sharpness = 40.0  # blur check; lower it for poor webcams
+min_sharpness = 25.0  # blur check (sharp webcam faces score ~45-65); lower it for poor webcams
 
 [web]
 host = "127.0.0.1"    # only this computer. "0.0.0.0" exposes the camera to your network

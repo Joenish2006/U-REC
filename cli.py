@@ -130,9 +130,11 @@ def cmd_info(cfg: dict) -> int:
 
 
 def cmd_download(cfg: dict) -> int:
-    for key in ("yunet", "sface", cfg["bodies"]["model"]):
+    insightface = cfg["recognition"]["backend"] == "insightface"
+    keys = [cfg["bodies"]["model"]] + ([] if insightface else ["yunet", "sface"])
+    for key in keys:
         print(f"{key:<12}{models.get(key)}")
-    if cfg["recognition"]["backend"] == "insightface":
+    if insightface:
         from urec.embedder import get_embedder
         get_embedder(cfg)  # insightface downloads its own models on first load
         print("insightface ready")
