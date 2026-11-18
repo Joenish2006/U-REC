@@ -145,6 +145,21 @@ tests/                 python -m unittest  (no camera needed)
 
 </details>
 
+## Uninstall
+
+On Windows, run `uninstall.bat` from the U-REC folder. You can also double-click it.
+It asks you to type `YES`, then deletes `.venv`, `data/` (all registered faces),
+`config.toml`, Python caches and the downloaded models in `%USERPROFILE%\.urec` and
+`%USERPROFILE%\.insightface`. The source code stays.
+
+```bat
+uninstall.bat --all       :: also delete the U-REC folder itself
+uninstall.bat --yes       :: skip the confirmation
+```
+
+Close U-REC first, because Windows can't delete files that are in use.
+`%USERPROFILE%\.insightface` is shared with any other app that uses InsightFace.
+
 ## Privacy
 
 Only embeddings are stored, in `data/urec.db`. Photos, the database, models and
