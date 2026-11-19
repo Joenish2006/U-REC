@@ -1,6 +1,6 @@
 """Streams the identify view to a browser at http://localhost:5000.
 
-Owner: Omkar
+Owner: Joenish
 
 Binds to 127.0.0.1 by default, so only this computer can see the camera feed.
 """

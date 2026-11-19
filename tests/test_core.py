@@ -27,12 +27,12 @@ def face(box):
 
 class MatcherTest(unittest.TestCase):
     def setUp(self):
-        self.m = Matcher({"Omkar": np.stack([unit(1, 0, 0), unit(0.9, 0.1, 0)]),
+        self.m = Matcher({"Nishanth": np.stack([unit(1, 0, 0), unit(0.9, 0.1, 0)]),
                           "Sathish": np.stack([unit(0, 1, 0)])}, threshold=0.5)
 
     def test_known_face(self):
         name, score = self.m.match(unit(1, 0.05, 0))
-        self.assertEqual(name, "Omkar")
+        self.assertEqual(name, "Nishanth")
         self.assertGreater(score, 0.9)
 
     def test_stranger_is_unknown(self):
@@ -54,12 +54,12 @@ class DatabaseTest(unittest.TestCase):
 
     def test_save_list_delete_reset(self):
         self.db.save_person("Joenish", "opencv", np.ones((3, 4), np.float32))
-        self.db.save_person("Omkar", "opencv", np.ones((2, 4), np.float32))
+        self.db.save_person("Nishanth", "opencv", np.ones((2, 4), np.float32))
         self.assertTrue(self.db.has("joenish"))  # names are case-insensitive
-        self.assertEqual([p[0] for p in self.db.people()], ["Joenish", "Omkar"])
+        self.assertEqual([p[0] for p in self.db.people()], ["Joenish", "Nishanth"])
         self.assertEqual(self.db.gallery("opencv")["Joenish"].shape, (3, 4))
-        self.assertTrue(self.db.delete("Omkar"))
-        self.assertFalse(self.db.delete("Omkar"))
+        self.assertTrue(self.db.delete("Nishanth"))
+        self.assertFalse(self.db.delete("Nishanth"))
         self.assertEqual(self.db.reset(), 1)
         self.assertEqual(self.db.gallery("opencv"), {})
 
@@ -84,20 +84,20 @@ class TrackerTest(unittest.TestCase):
     def test_same_person_keeps_track_and_votes(self):
         t = Tracker(window=5)
         (a,) = t.update([[0, 0, 100, 200]])
-        a.vote("Omkar", 0.7)
+        a.vote("Nishanth", 0.7)
         (b,) = t.update([[5, 3, 104, 205]])
         self.assertIs(a, b)
-        b.vote("Omkar", 0.8)
-        self.assertEqual(b.label(min_votes=2), ("Omkar", 0.8))
+        b.vote("Nishanth", 0.8)
+        self.assertEqual(b.label(min_votes=2), ("Nishanth", 0.8))
 
     def test_one_vote_is_not_enough(self):
         (a,) = Tracker().update([[0, 0, 100, 200]])
-        a.vote("Omkar", 0.7)
+        a.vote("Nishanth", 0.7)
         self.assertEqual(a.label(min_votes=2), (None, 0.0))
 
     def test_unknown_votes_win_ties_against_names(self):
         (a,) = Tracker().update([[0, 0, 100, 200]])
-        for name in ("Omkar", "Omkar", None, None, None):
+        for name in ("Nishanth", "Nishanth", None, None, None):
             a.vote(name, 0.5)
         self.assertEqual(a.label(min_votes=2), (None, 0.0))
 

@@ -179,8 +179,7 @@ Built by **Team Rocognance**, B.Tech Robotics and Automation, Lovely Professiona
 
 | | Focus |
 |---|---|
-| **Joenish** | lead · recognition core |
+| **Joenish** | lead · recognition core · CLI · web view · launchers |
 | **Nishanth** | face registration |
 | **Sathish** | live view · body detection · tracking |
-| **Omkar** | CLI · web view · launchers |
 | **Thanigai** | database · testing |

@@ -1,6 +1,6 @@
 """U-REC command line. Run with no arguments for the menu.
 
-Owner: Omkar
+Owner: Joenish
 
     python cli.py                      interactive menu
     python cli.py identify [--web]     live recognition (window, or browser at localhost)

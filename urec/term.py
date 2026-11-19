@@ -1,6 +1,6 @@
 """Terminal styling: the U-REC title art, colours and status messages.
 
-Owner: Omkar
+Owner: Joenish
 
 Colours turn off automatically when output isn't a terminal or NO_COLOR is set
 (https://no-color.org). Old consoles that can't print the block characters get a
