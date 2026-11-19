@@ -141,6 +141,10 @@ urec/
   database.py          SQLite, embeddings only
   config.py · models.py · runtime.py · camera.py · ui.py
 tests/                 python -m unittest  (no camera needed)
+  test_matcher.py      3 tests · Joenish
+  test_register.py     2 tests · Nishanth
+  test_live_view.py    9 tests · Sathish
+  test_database.py     3 tests · Thanigai
 ```
 
 </details>
