@@ -15,7 +15,7 @@ if not errorlevel 1 (
   if not defined PY py -3.11 -c "import sys" >nul 2>nul && set "PY=py -3.11"
 )
 if not defined PY set "PY=python"
-%PY% -c "import sys; sys.exit(sys.version_info < (3, 11))" || (echo Python 3.11 or newer is required. & goto :fail)
+%PY% -c "import sys; sys.exit(sys.version_info < (3, 11))" || (echo Python 3.12 is required. Install it with: winget install -e --id Python.Python.3.12 & goto :fail)
 
 %PY% -m venv .venv || goto :fail
 set "VPY=.venv\Scripts\python.exe"

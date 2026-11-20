@@ -24,6 +24,14 @@
 
 ## Quick start
 
+**Windows:** install Python 3.12 first. Newer versions (3.13+) don't have wheels for all the dependencies yet, so setup fails.
+
+```powershell
+winget install -e --id Python.Python.3.12
+```
+
+Then open a new terminal and run the steps below.
+
 ```bash
 git clone https://github.com/Joenish2006/U-REC && cd U-REC
 ./setup.sh --insightface          # one time   ·  Windows: setup.bat --insightface
@@ -105,6 +113,7 @@ The settings you're most likely to change:
 | Low fps | `yolox_tiny`, `buffalo_s`, `recognize_every = 3` |
 | `CERTIFICATE_VERIFY_FAILED` | The network intercepts HTTPS (campus Wi-Fi). Run setup once on a hotspot |
 | Switched backend, everyone Unknown | Each backend keeps its own data, so register people again |
+| Setup fails on Windows with a Python version error | Install Python 3.12: `winget install -e --id Python.Python.3.12`, then open a new terminal and run `setup.bat` again |
 | InsightFace install fails on Windows | Install [VS Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) → *Desktop development with C++* |
 
 </details>
